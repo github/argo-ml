@@ -10,10 +10,7 @@ version = "v1alpha1"
 plural = "workflows"
 
 
-# config.load_incluster_config()
-
-# local dev kube config
-config.load_kube_config()
+config.load_incluster_config()
 
 
 namespace = 'default'

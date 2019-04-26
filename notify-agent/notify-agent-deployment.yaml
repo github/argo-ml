@@ -30,9 +30,9 @@ spec:
                 name: agent-secret
                 key: webhook_url
           - name: DEFAULT_CHANNEL
-            value: "channel-ops"
+            value: "channel-ops" # add a default channel to post to
           - name: ARGO_UI_URL
-            value: "<http://kube.your_domain.com>"
+            value: "<http://kube.your_domain.com>" # edit with your argo ui domain
           - name: WEBHOOKS_ENABLED
             value: True
         command: ["python", "notify-agent/agent.py"]
