@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argo-hyperparam-controller
+  namespace: argo
+  labels:
+    app: argo-hyperparam-controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: argo-hyperparam-controller
+  template:
+    metadata:
+      labels:
+        app: argo-hyperparam-controller
+    spec:
+      containers:
+      - name: argo-hyperparam-controller
+        image: analytics-kubelet-055005d.private-us-east-1.github.net:30550/argo-ml:latest
+        command: ["python", "hyperparam-controller/controller.py"]

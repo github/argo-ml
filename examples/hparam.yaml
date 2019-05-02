@@ -1,0 +1,50 @@
+
+apiVersion: argoproj.io/v1alpha1
+kind: HyperParamWorkflow
+metadata:
+  name: example-hparam-sweep
+spec:
+  hyperparams:
+    # This setup will create 12 models - LR between 0.1 and 0.5 x 3 types of models
+    learning-rate:
+      range:  # Ranges will start from min and go to max with step
+        min: 0.1
+        max: 0.5
+        step: 0.1
+    model:
+      values:  # Values will iterate over flat list
+        - RandomForest
+        - SVM
+        - LogisticRegression
+  algorithm: grid
+
+  entrypoint: hparam-example
+  templates:
+  - name: hparam-example
+    parallelism: 3  # This will allow only 3 nodes to run at same time, good for resource conservation
+    steps:
+    - - name: train
+        template: train
+        arguments:
+          parameters:
+          - {name: learning-rate, value: "{{item.learning-rate}}"}
+          - {name: model, value: "{{item.model}}"}
+        withParam: "{{workflow.parameters.hyperparams}}"
+
+  - name: train
+    inputs:
+      parameters:
+      - name: learning-rate
+      - name: model
+    container:
+      image: docker/whalesay:latest
+      command: [sh, -c]
+      args: ["cowsay $LR"]
+      resources:
+        requests:
+          nvidia.com/gpu: 1 # requesting 1 GPU
+        limits:
+          nvidia.com/gpu: 1
+      env:
+        - name: LR
+          value: "{{inputs.parameters.learning-rate}}"
