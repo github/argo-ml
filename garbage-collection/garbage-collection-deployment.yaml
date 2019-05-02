@@ -1,0 +1,19 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: hello
+spec:
+  schedule: "@weekly"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: garbage-collection
+            image: argo-ml/latest
+            args:
+            - /bin/sh
+            - -c
+            - python gc_cleanup.py --starts_with ci- --label_selector cronWorkflow --adhoc --max_age_hrs 336
+            - python gc_cleanup.py --starts_with ci- --label_selector cronWorkflow --max_age_hrs 1440
+          restartPolicy: OnFailure
