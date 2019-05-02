@@ -69,7 +69,6 @@ def generate_workflow(wf, experiments):
     return wf
 
 
-
 print("Starting loop")
 for event in watch.stream(custom_api.list_namespaced_custom_object, group, version, namespace, plural):
     if event['type'] == 'ADDED':
