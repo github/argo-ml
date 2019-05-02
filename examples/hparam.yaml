@@ -14,12 +14,13 @@ spec:
       values:
         - RandomForest
         - SVM
-        - LogistigRegression
+        - LogisticRegression
   algorithm: grid
 
   entrypoint: hparam-example
   templates:
   - name: hparam-example
+    parallelism: 3  # This will allow only 3 nodes to run at same time, good for resource conservation
     steps:
     - - name: train
         template: train

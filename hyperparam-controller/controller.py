@@ -77,5 +77,12 @@ for event in watch.stream(custom_api.list_namespaced_custom_object, group, versi
         if event['raw_object']['spec']['algorithm'] == 'grid':
             experiments = grid_search(hparams)
             wf = generate_workflow(event['raw_object'], experiments)
-            resp = custom_api.create_namespaced_custom_object(group, version, namespace, "workflows", wf, pretty=True)
+            try:
+                resp = custom_api.create_namespaced_custom_object(group, version, namespace, "workflows", wf, pretty=True)
+            except client.rest.ApiException:
+                continue
             print(yaml.dump(wf))
+    if event['type'] == 'DELETED':
+        # TODO: This would be better managed with resource owners
+        name = event['raw_object']['metadata']['name']
+        custom_api.delete_namespaced_custom_object(group, version, namespace, "workflows", name=name, body=client.V1DeleteOptions())
