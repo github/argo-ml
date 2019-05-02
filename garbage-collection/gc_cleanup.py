@@ -33,6 +33,7 @@ def get_pods(workflow,namespace):
             pass
     return pods
 
+
 def delete_pods(pod,namespace,body):
     try:
         api_response = v1_api.delete_namespaced_pod(pod, namespace, body=body, propagation_policy='Background')
@@ -48,7 +49,7 @@ def clean_up(args):
     try:
         workflows = custom_api.list_namespaced_custom_object(args.group, args.version, args.namespace, args.plural)
     except ApiException as e:
-        print("Exception when calling CustomObjectsApi->list_namespaced_custom_object: %s\n" % e)
+        logging.info("Exception when calling CustomObjectsApi->list_namespaced_custom_object: %s\n" % e)
 
     # track workflows expired, workflows not expired and pods deleted for logging
     workflows_expired = []
@@ -60,7 +61,7 @@ def clean_up(args):
         try:
             finished_at = datetime.strptime(workflow['status']['finishedAt'], '%Y-%m-%dT%H:%M:%SZ')
         except TypeError:
-            print('could not read workflow {}'.format(key))
+            logging.info('could not read workflow {}'.format(key))
         time_since_completion = (datetime.utcnow() - finished_at).total_seconds()/60/60
         # Get specific metadata based on workflow type
         if args.adhoc:
@@ -80,7 +81,7 @@ def clean_up(args):
                     if not args.dry_run:
                         delete_pods(pod,args.namespace,body)
                     else:
-                        print("dry_run flag set, would have deleted {}".format(pod))
+                        logging.info("dry_run flag set, would have deleted {}".format(pod))
             else:
                 workflows_not_expired.append(key)
         else:
@@ -100,11 +101,11 @@ def clean_up(args):
                     if not args.dry_run:
                         delete_pods(pod,args.namespace,body)
                     else:
-                        print("dry_run flag set, would have deleted {}".format(pod))
+                        logging.info("dry_run flag set, would have deleted {}".format(pod))
             else:
                 workflows_not_expired.append(key)
-    print(workflows_expired)
-    print(workflows_not_expired)
+    logging.info("expired workflows: {}".format(workflows_expired))
+
 
 def main():
   logging.basicConfig(level=logging.INFO)
