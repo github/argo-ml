@@ -38,6 +38,11 @@ spec:
       image: docker/whalesay:latest
       command: [sh, -c]
       args: ["cowsay $LR"]
+      resources:
+        requests:
+          nvidia.com/gpu: 1 # requesting 1 GPU
+        limits:
+          nvidia.com/gpu: 1
       env:
         - name: LR
           value: "{{inputs.parameters.learning-rate}}"
