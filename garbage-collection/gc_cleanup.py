@@ -56,7 +56,7 @@ def clean_up(args):
     try:
         workflows = custom_api.list_namespaced_custom_object(args.group, args.version, args.namespace, args.plural)
     except ApiException as e:
-        logging.info("Exception when calling CustomObjectsApi->list_namespaced_custom_object: %s\n" % e)
+        logging.warning("Exception when calling CustomObjectsApi->list_namespaced_custom_object: %s\n" % e)
 
     # track workflows expired, workflows not expired and pods deleted for logging
     workflows_expired = []
