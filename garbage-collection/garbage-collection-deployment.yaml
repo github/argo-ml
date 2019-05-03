@@ -10,7 +10,7 @@ spec:
         spec:
           containers:
           - name: garbage-collection
-            image: argo-ml/latest
+            image: analytics-kubelet-055005d.private-us-east-1.github.net:30550/argo-ml:latest
             args:
             - /bin/sh
             - -c
