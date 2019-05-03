@@ -12,13 +12,13 @@ from kubernetes.client.rest import ApiException
 from pprint import pprint
 
 
-# config.load_incluster_config()
+config.load_incluster_config()
 
-config.load_kube_config()
 
 api_client = client.ApiClient()
 custom_api = client.CustomObjectsApi(api_client)
 v1_api = client.CoreV1Api(api_client)
+
 
 def get_pods(workflow,namespace):
     # check if pods exist in workflow and collect them
@@ -141,8 +141,8 @@ parser.add_argument("--max_age_hrs", default=168, type=int, help=("enter the max
 parser.add_argument("--dry_run", action='store_true', help=("Triggers a dry run delete"))
 
 args = parser.parse_args()
-print(args)
+logging.info(args)
 clean_up(args)
 
 if __name__ == "__main__":
-  main()
+    main()
