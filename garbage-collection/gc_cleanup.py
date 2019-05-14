@@ -2,7 +2,6 @@
 
 import os
 import argparse
-import json, yaml
 from datetime import datetime, tzinfo, timedelta
 import logging
 
