@@ -3,7 +3,7 @@ kind: CronJob
 metadata:
   name: hello
 spec:
-  schedule: "@weekly"
+  schedule: "@daily"
   jobTemplate:
     spec:
       template:
@@ -12,8 +12,6 @@ spec:
           - name: garbage-collection
             image: analytics-kubelet-055005d.private-us-east-1.github.net:30550/argo-ml:latest
             args:
-            - /bin/sh
-            - -c
-            - python gc_cleanup.py --starts_with ci- --label_selector cronWorkflow --adhoc --max_age_hrs 336
-            - python gc_cleanup.py --starts_with ci- --label_selector cronWorkflow --max_age_hrs 1440
+            - python
+            - gc_cleanup.py --max_age_hrs 168 --adhoc
           restartPolicy: OnFailure

@@ -9,7 +9,6 @@ import logging
 
 from kubernetes import client, config, watch
 from kubernetes.client.rest import ApiException
-from pprint import pprint
 
 
 config.load_incluster_config()
@@ -108,8 +107,8 @@ def main():
     parser.add_argument("-grp", "--group", default="argoproj.io", type=str, help=("The custom resource's group name."))
     parser.add_argument("-version", default="v1alpha1", type=str, help=("The custom resource's version."))
     parser.add_argument("-p", "--plural", default="workflows", type=str, help=("The custom resource's plural name to filter by."))
-    parser.add_argument("--starts_with", nargs='+', type=str, help=("A list of specific names filtering for workflows that start with"))
-    parser.add_argument("--label_selector", nargs='+', type=str, help=("A list of labels to filter by."))
+    parser.add_argument("--starts_with", nargs='+', default = [], type=str, help=("A list of specific names filtering for workflows that start with"))
+    parser.add_argument("--label_selector", nargs='+', default = [], type=str, help=("A list of labels to filter by."))
     parser.add_argument("--adhoc", action='store_true', help=("This flag will cause the workflows filtered by the label_selector and starts_with to be ignored if set"))
     parser.add_argument("--max_age_hrs", default=168, type=int, help=("enter the maximum age to keep workflows for in hours"))
     parser.add_argument("--dry_run", action='store_true', help=("Triggers a dry run delete"))
