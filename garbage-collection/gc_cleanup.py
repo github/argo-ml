@@ -40,6 +40,7 @@ def delete_pods(pod,namespace,body):
     except ApiException as e:
         logging.info("Exception when calling CoreV1Api->delete_namespaced_pod: %s\n" % e)
 
+
 def check_filters(key,workflow,filter_words):
     for word in filter_words:
         if key.startswith(word):
@@ -47,6 +48,7 @@ def check_filters(key,workflow,filter_words):
         elif word in workflow['metadata']['labels']:
             return True
     return False
+
 
 def clean_up(args):
     # body object for kubernetes api
