@@ -25,7 +25,7 @@ func main() {
 		TLSConfig: cfg,
 	}
 	log.Print("Starting the service...")
-	log.Fatal(srv.ListenAndServeTLS("server.crt", "server.key"))
+	log.Fatal(srv.ListenAndServeTLS("cert.pem", "key.pem"))
 }
 
 type handler struct{}
