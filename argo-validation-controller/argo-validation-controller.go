@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/tls"
-	"crypto/x509"
 	"io/ioutil"
 	"encoding/json"
 	"log"
@@ -16,23 +15,16 @@ import (
 )
 
 func main() {
-	caCert, err := ioutil.ReadFile("client.crt")
-	if err != nil {
-		log.Fatal(err)
-	}
-	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(caCert)
-	cfg := &tls.Config{
-		ClientAuth: tls.RequireAndVerifyClientCert,
-		ClientCAs:  caCertPool,
-	}
+	sCert, _ := tls.LoadX509KeyPair("cert.pem", "key.pem")
 	srv := &http.Server{
 		Addr:      ":8443",
 		Handler:   &handler{},
-		TLSConfig: cfg,
+	}
+	srv.TLSConfig = &tls.Config{
+		Certificates: []tls.Certificate{sCert},
 	}
 	log.Print("Starting the service...")
-	log.Fatal(srv.ListenAndServeTLS("cert.pem", "key.pem"))
+	log.Fatal(srv.ListenAndServeTLS("", ""))
 }
 
 type handler struct{}
