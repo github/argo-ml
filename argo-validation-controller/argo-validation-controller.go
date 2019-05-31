@@ -1,36 +1,57 @@
 package main
 
 import (
-	"crypto/tls"
-	"io/ioutil"
-	"encoding/json"
-	"log"
-	"fmt"
 	"bytes"
+	"crypto/tls"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"log"
 	"net/http"
+
 	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	// validation "github.com/argoproj/argo/workflow/validate"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/kelseyhightower/envconfig"
 )
 
-func main() {
-	sCert, _ := tls.LoadX509KeyPair("cert.pem", "key.pem")
-	srv := &http.Server{
-		Addr:      ":8443",
-		Handler:   &handler{},
+// Config for replicating bash script
+type Config struct {
+	ListenOn string `default:"0.0.0.0:8443"`
+	TlSCert  string `default:"/etc/webhook/certs/cert.pem"`
+	TlSKey   string `default:"/etc/webhook/certs/key.pem"`
+}
+
+func getValidatorNoSSL(ListenOn string) *http.Server {
+	server := &http.Server{
+		Addr:    ListenOn,
+		Handler: &handler{},
 	}
-	srv.TLSConfig = &tls.Config{
+
+	return server
+}
+
+func main() {
+	config := &Config{}
+	envconfig.Process("", config)
+
+	sCert, err := tls.LoadX509KeyPair(config.TlSCert, config.TlSKey)
+	server := getValidatorNoSSL(config.ListenOn)
+	server.TLSConfig = &tls.Config{
 		Certificates: []tls.Certificate{sCert},
 	}
-	log.Print("Starting the service...")
-	log.Fatal(srv.ListenAndServeTLS("", ""))
+	if err != nil {
+		log.Printf("server failed to start due to %s\n", (err))
+	}
+	server.ListenAndServeTLS("", "")
 }
 
 type handler struct{}
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	
+
 	b, err := ioutil.ReadAll(req.Body)
 	defer req.Body.Close()
 	if err != nil {
@@ -68,7 +89,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	}
 	output, _ := json.Marshal(reviewStatus)
-  	w.Write(output)
+	w.Write(output)
 }
 
 // function to ping the hparam api
@@ -85,7 +106,6 @@ func getResource(jsonData []byte) ([]byte, error) {
 	}
 }
 
-
 // function to validate the results using argoproj validation code
 func validate(jsonStr string) *wfv1.Workflow {
 	wf := unmarshalWf(jsonStr)
@@ -100,4 +120,3 @@ func unmarshalWf(jsonStr string) *wfv1.Workflow {
 	}
 	return &wf
 }
-
