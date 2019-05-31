@@ -1,25 +1,26 @@
 package main
 
 import (
-	"crypto/tls"
-	"errors"
-	"io/ioutil"
-	"encoding/json"
-	"log"
-	"fmt"
 	"bytes"
+	"crypto/tls"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"log"
 	"net/http"
+
+	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
+	"github.com/argoproj/argo/workflow/validate"
 	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"github.com/argoproj/argo/workflow/validate"
-	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
 func main() {
 	sCert, _ := tls.LoadX509KeyPair("certificates/server-cert.pem", "certificates/server-key.pem")
 	srv := &http.Server{
-		Addr:      ":12345",
-		Handler:   &handler{},
+		Addr:    ":12345",
+		Handler: &handler{},
 	}
 	srv.TLSConfig = &tls.Config{
 		Certificates: []tls.Certificate{sCert},
@@ -31,28 +32,29 @@ func main() {
 type handler struct{}
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	
+
 	b, err := ioutil.ReadAll(req.Body)
 	defer req.Body.Close()
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
-	var validationError string
+	var hParamValidationError string
+	var argoValidationError string
 	allowed := true
 	wf, err := getResource(b)
 
 	if err != nil {
 		log.Printf("Workflow error")
 		allowed = false
-		validationError = fmt.Sprintf("Error while generating workflow %s", err)
+		hParamValidationError = fmt.Sprintf("Error while generating workflow %s", err)
 	}
 	log.Printf("Workflow error2")
 
 	err = validateWF(wf)
 
 	if err != nil {
-		validationError = fmt.Sprintf("Validation error %s", err)
+		argoValidationError = fmt.Sprintf("Workflow validation error %s", err)
 		allowed = false
 	}
 
@@ -64,13 +66,13 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	} else {
 		reviewStatus.Allowed = false
 		reviewStatus.Result = &metav1.Status{
-			Message: validationError,
+			Message: hParamValidationError + argoValidationError,
 		}
 
 	}
 	output, _ := json.Marshal(reviewStatus)
 	log.Printf("%s", output)
-  	w.Write(output)
+	w.Write(output)
 }
 
 // function to ping the hparam api
@@ -105,7 +107,6 @@ func getResource(jsonData []byte) ([]byte, error) {
 	}
 }
 
-
 // function to validate the results using argoproj validation code
 func validateWF(jsonStr []byte) error {
 	wf := &wfv1.Workflow{}
@@ -115,4 +116,3 @@ func validateWF(jsonStr []byte) error {
 	}
 	return validate.ValidateWorkflow(wf, validate.ValidateOpts{})
 }
-
