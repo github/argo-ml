@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/tls"
+	"errors"
 	"io/ioutil"
 	"encoding/json"
 	"log"
@@ -10,7 +11,7 @@ import (
 	"net/http"
 	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	// validation "github.com/argoproj/argo/workflow/validate"
+	"github.com/argoproj/argo/workflow/validate"
 	wfv1 "github.com/argoproj/argo/pkg/apis/workflow/v1alpha1"
 )
 
@@ -37,19 +38,19 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), 500)
 		return
 	}
-	var allowed bool
 	var validationError string
-
+	allowed := true
 	wf, err := getResource(b)
+
 	if err != nil {
+		log.Printf("Workflow error")
 		allowed = false
 		validationError = fmt.Sprintf("Error while generating workflow %s", err)
 	}
-	fmt.Sprintf("workflow %s", wf)
+	log.Printf("Workflow error2")
 
-	// get a json string here
+	err = validateWF(wf)
 
-	// pass a json string here
 	if err != nil {
 		validationError = fmt.Sprintf("Validation error %s", err)
 		allowed = false
@@ -68,15 +69,34 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	}
 	output, _ := json.Marshal(reviewStatus)
+	log.Printf("%s", output)
   	w.Write(output)
 }
 
 // function to ping the hparam api
 func getResource(jsonData []byte) ([]byte, error) {
-	jsonValue, _ := json.Marshal(jsonData)
-	response, err := http.Post("analytics-exploration-ead20c6.private-us-east-1.github.net:5000/workflow", "application/json", bytes.NewBuffer(jsonValue))
+	validationRequest := &v1beta1.AdmissionReview{}
+	err := json.Unmarshal(jsonData, validationRequest)
+	if err != nil {
+		log.Printf("Error processing validation request: %s\n", err)
+		r := []byte("")
+		return r, err
+	}
+	hparam, err := json.Marshal(validationRequest.Request.Object)
+	if err != nil {
+		log.Printf("Error processing validation request: %s\n", err)
+		r := []byte("")
+		return r, err
+	}
+	response, err := http.Post("http://analytics-exploration-ead20c6.private-us-east-1.github.net:5000/workflow", "application/json", bytes.NewBuffer(hparam))
 	if err != nil {
 		log.Printf("The HTTP request failed with error %s\n", err)
+		r := []byte("")
+		return r, err
+	} else if response.StatusCode != 200 {
+		resp, _ := ioutil.ReadAll(response.Body)
+		err = errors.New(fmt.Sprintf("The HTTP request code is not 200: %s\n", resp))
+		log.Printf("The HTTP request code is not 200: %s\n", resp)
 		r := []byte("")
 		return r, err
 	} else {
@@ -87,17 +107,12 @@ func getResource(jsonData []byte) ([]byte, error) {
 
 
 // function to validate the results using argoproj validation code
-func validate(jsonStr string) *wfv1.Workflow {
-	wf := unmarshalWf(jsonStr)
-	return wf
-}
-
-func unmarshalWf(jsonStr string) *wfv1.Workflow {
-	var wf wfv1.Workflow
-	err := json.Unmarshal([]byte(jsonStr), &wf)
+func validateWF(jsonStr []byte) error {
+	wf := &wfv1.Workflow{}
+	err := json.Unmarshal(jsonStr, wf)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	return &wf
+	return validate.ValidateWorkflow(wf, validate.ValidateOpts{})
 }
 

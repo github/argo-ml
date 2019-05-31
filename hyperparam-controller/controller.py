@@ -38,7 +38,8 @@ def generate_workflow(wf, experiments):
     del wf['spec']['hyperparams']
 
     for i in ['selfLink', 'uid', 'creationTimestamp', 'generation', 'resourceVersion']:
-        del wf['metadata'][i]
+        if i in wf['metadata']:
+            del wf['metadata'][i]
 
     wf['spec']['arguments'] = wf['spec'].get('arguments', {})
     wf['spec']['arguments']['parameters'] = wf['spec']['arguments'].get('parameters', [])
