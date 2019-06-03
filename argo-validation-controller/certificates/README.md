@@ -18,6 +18,7 @@ CSR=$(cat server.csr | base64 | tr -d '\n')
 ```
 
 ```
+cat <<EOF | kubectl apply -f -
 apiVersion: certificates.k8s.io/v1beta1
 kind: CertificateSigningRequest
 metadata:
@@ -30,8 +31,9 @@ spec:
   - digital signature
   - key encipherment
   - server auth
+EOF
 ```
-
+or in a separate file with:
 ```
 kubectl create -f << csr file >>
 ```
