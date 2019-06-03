@@ -17,7 +17,7 @@ import (
 )
 
 func main() {
-	sCert, _ := tls.LoadX509KeyPair("certificates/server-cert.pem", "certificates/server-key.pem")
+	sCert, _ := tls.LoadX509KeyPair("/certificates/server-cert.pem", "/certificates/server-key.pem")
 	srv := &http.Server{
 		Addr:    ":12345",
 		Handler: &handler{},
@@ -39,24 +39,8 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), 500)
 		return
 	}
-	var hParamValidationError string
-	var argoValidationError string
-	allowed := true
-	wf, err := getResource(b)
-
-	if err != nil {
-		log.Printf("Workflow error")
-		allowed = false
-		hParamValidationError = fmt.Sprintf("Error while generating workflow %s", err)
-	}
-	log.Printf("Workflow error2")
-
-	err = validateWF(wf)
-
-	if err != nil {
-		argoValidationError = fmt.Sprintf("Workflow validation error %s", err)
-		allowed = false
-	}
+	
+	validationError, allowed := handleAdmission(b)
 
 	w.Header().Set("Content-Type", "application/json")
 	reviewStatus := v1beta1.AdmissionResponse{}
@@ -66,24 +50,39 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	} else {
 		reviewStatus.Allowed = false
 		reviewStatus.Result = &metav1.Status{
-			Message: hParamValidationError + argoValidationError,
+			Message: fmt.Sprintf("%s", validationError),
 		}
 
 	}
-	output, _ := json.Marshal(reviewStatus)
-	log.Printf("%s", output)
+	validationRequest := &v1beta1.AdmissionReview{}
+	_ = json.Unmarshal(b, validationRequest)
+	validationRequest.Response = &reviewStatus
+	output, _ := json.Marshal(validationRequest)
 	w.Write(output)
 }
 
-// function to ping the hparam api
-func getResource(jsonData []byte) ([]byte, error) {
+func handleAdmission(b []byte) (string, bool) {
 	validationRequest := &v1beta1.AdmissionReview{}
-	err := json.Unmarshal(jsonData, validationRequest)
+	err := json.Unmarshal(b, validationRequest)
 	if err != nil {
-		log.Printf("Error processing validation request: %s\n", err)
-		r := []byte("")
-		return r, err
+		return fmt.Sprintf("Error while unmarshalling AdmissionReview: %s", err), false
 	}
+	wf, err := getResource(validationRequest)
+
+	if err != nil {
+		return fmt.Sprintf("Error while generating workflow: %s", err), false
+	}
+
+	err = validateWF(wf)
+
+	if err != nil {
+		return fmt.Sprintf("Validation error: %s", err), false
+	}
+	return "", true
+}
+
+// function to ping the hparam api
+func getResource(validationRequest *v1beta1.AdmissionReview) ([]byte, error) {
 	hparam, err := json.Marshal(validationRequest.Request.Object)
 	if err != nil {
 		log.Printf("Error processing validation request: %s\n", err)
@@ -92,13 +91,11 @@ func getResource(jsonData []byte) ([]byte, error) {
 	}
 	response, err := http.Post("http://analytics-exploration-ead20c6.private-us-east-1.github.net:5000/workflow", "application/json", bytes.NewBuffer(hparam))
 	if err != nil {
-		log.Printf("The HTTP request failed with error %s\n", err)
 		r := []byte("")
 		return r, err
 	} else if response.StatusCode != 200 {
 		resp, _ := ioutil.ReadAll(response.Body)
 		err = errors.New(fmt.Sprintf("The HTTP request code is not 200: %s\n", resp))
-		log.Printf("The HTTP request code is not 200: %s\n", resp)
 		r := []byte("")
 		return r, err
 	} else {
