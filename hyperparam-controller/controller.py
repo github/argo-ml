@@ -1,7 +1,8 @@
 from pprint import pprint
 import itertools
 import json, yaml
-from kubernetes import client, config, watch
+from kubernetes import client, config
+from kubernetes import watch as kwatch
 
 
 def generate_param_combinations(params):
@@ -67,7 +68,7 @@ def main():
     custom_api = client.CustomObjectsApi(api_client)
 
 
-    watch = watch.Watch(return_type=object)
+    watch = kwatch.Watch(return_type=object)
 
     print("Starting loop")
     for event in watch.stream(custom_api.list_namespaced_custom_object, group, version, namespace, plural):

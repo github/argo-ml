@@ -19,7 +19,7 @@ import (
 func main() {
 	sCert, _ := tls.LoadX509KeyPair("/certificates/server-cert.pem", "/certificates/server-key.pem")
 	srv := &http.Server{
-		Addr:    ":12345",
+		Addr:    ":8443",
 		Handler: &handler{},
 	}
 	srv.TLSConfig = &tls.Config{
@@ -39,7 +39,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), 500)
 		return
 	}
-	
+
 	validationError, allowed := handleAdmission(b)
 
 	w.Header().Set("Content-Type", "application/json")
@@ -89,7 +89,7 @@ func getResource(validationRequest *v1beta1.AdmissionReview) ([]byte, error) {
 		r := []byte("")
 		return r, err
 	}
-	response, err := http.Post("http://analytics-exploration-ead20c6.private-us-east-1.github.net:5000/workflow", "application/json", bytes.NewBuffer(hparam))
+	response, err := http.Post("http://argo-hyperparam-controller:5000", "application/json", bytes.NewBuffer(hparam))
 	if err != nil {
 		r := []byte("")
 		return r, err
