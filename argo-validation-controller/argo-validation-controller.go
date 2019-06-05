@@ -62,6 +62,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 func handleAdmission(b []byte) (string, bool) {
+	log.Printf("Request received: %s", b)
 	validationRequest := &v1beta1.AdmissionReview{}
 	err := json.Unmarshal(b, validationRequest)
 	if err != nil {
@@ -89,7 +90,7 @@ func getResource(validationRequest *v1beta1.AdmissionReview) ([]byte, error) {
 		r := []byte("")
 		return r, err
 	}
-	response, err := http.Post("http://argo-hyperparam-controller:5000", "application/json", bytes.NewBuffer(hparam))
+	response, err := http.Post("http://argo-hyperparam-controller:5000/workflow", "application/json", bytes.NewBuffer(hparam))
 	if err != nil {
 		r := []byte("")
 		return r, err
