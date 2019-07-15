@@ -1,3 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: argo-hyperparam-controller
+  namespace: argo
+spec:
+  ports:
+  - name: webhook
+    port: 5000
+    targetPort: 5000
+  selector:
+    name: argo-hyperparam-controller
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -19,3 +32,10 @@ spec:
       - name: argo-hyperparam-controller
         image: analytics-kubelet-055005d.private-us-east-1.github.net:30550/argo-ml:latest
         command: ["python", "hyperparam-controller/controller.py"]
+      - name: argo-hyperparam-validation
+        image: analytics-kubelet-055005d.private-us-east-1.github.net:30550/argo-ml:latest
+        command: ["python", "hyperparam-controller/api.py"]
+        ports:
+        - name: http
+          containerPort: 5000
+          protocol: TCP
