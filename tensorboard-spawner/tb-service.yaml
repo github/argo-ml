@@ -1,0 +1,15 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tensorboard-{{ workflow }}
+  label:
+    virga: tensorboard
+spec:
+  ports:
+  - name: tb
+    port: 6006
+    targetPort: 6006
+  type: NodePort
+  selector:
+    app: tensorboard-{{ workflow }}

@@ -1,0 +1,49 @@
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tensorboard-{{ workflow }}
+  labels:
+    app: tensorboard{{ workflow }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tensorboard-{{ workflow }}
+  template:
+    metadata:
+      labels:
+        app: tensorboard-{{ workflow }}
+    spec:
+      initContainers:
+      - name: downloader
+        image: analytics-kubelet-055005d.private-us-east-1.github.net:30550/tensorboard
+        command: 
+          - "/download.sh"
+          {% for log in logs %}
+          - "{{ log }}"
+          {% endfor %}
+        volumeMounts:
+        - name: logs
+          mountPath: /logs
+        env:
+        - name: MC_HOSTS_dumpster
+          valueFrom:
+            secretKeyRef:
+              name: s3host
+              key: s3host
+      containers:
+      - name: tensorboard
+        image: analytics-kubelet-055005d.private-us-east-1.github.net:30550/tensorboard
+        command: ["tensorboard", "--logdir=/logs"]
+        ports:
+        - name: http
+          containerPort: 6006
+          protocol: TCP
+        volumeMounts:
+        - name: logs
+          mountPath: /logs
+      volumes:
+      - name: logs
+        emptyDir: {}
