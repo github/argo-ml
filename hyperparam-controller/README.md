@@ -1,4 +1,18 @@
----
+# Argo Hyperparameter tuning
+
+Hyperparameter tuning controller manages custom resource `HyperParamWorkflow`. This is wrapper resource around `Workflow` that unrolls defined hyperparam search space according to algorithm chosen and creates list of runs. List then will be passed to workflow as parameter and can be used, for example, with `with_items` clause.
+
+You can list hyperparameter runs with
+
+```
+kubectl get hparam
+```
+
+## Structure of HyperparamWorkflow
+
+Example hparam workflow
+
+```
 apiVersion: argoproj.io/v1alpha1
 kind: HyperParamWorkflow
 metadata:
@@ -48,3 +62,13 @@ spec:
       env:
         - name: LR
           value: "{{inputs.parameters.learning-rate}}"
+```
+
+This looks like regular Argo workflow with few additional fields:
+
+`hyperparams` - this field defines list of hyperparameters we want to optimize. There are two ways to specify parameter search space:
+
+    * `values` - each value in list will be hyperparameter
+    * `range` - hyperparameters will be all values between `min` and `max` with `step`
+
+`algorithm` - Algorithm used for generating hyperparams, currently we only support `grid` which means every combination
