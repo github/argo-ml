@@ -32,7 +32,7 @@ Although it's also called controller, it's not following pattern above. [Admissi
 Just regular REST APIs
 
 
-# Compontents
+# Components
 
 ## Argo hyperparam workflow
 
