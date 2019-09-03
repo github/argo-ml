@@ -3,7 +3,17 @@ import itertools
 import json, yaml
 from kubernetes import client, config
 from kubernetes import watch as kwatch
+from kubernetes.config.config_exception import ConfigException
+import logging
 
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
+try:
+    config.load_incluster_config()
+except ConfigException:
+    logger.debug("loading local kube config")
+    config.load_kube_config()
 
 def generate_param_combinations(params):
     keys, values = zip(*params.items())
@@ -60,9 +70,6 @@ def main():
     plural = "hyperparamworkflows"
 
 
-    config.load_incluster_config()
-
-
     namespace = 'default'
     api_client = client.ApiClient()
     custom_api = client.CustomObjectsApi(api_client)
@@ -70,9 +77,11 @@ def main():
 
     watch = kwatch.Watch(return_type=object)
 
-    print("Starting loop")
-    for event in watch.stream(custom_api.list_namespaced_custom_object, group, version, namespace, plural):
+    logger.info("Starting loop")
+    for event in watch.stream(custom_api.list_cluster_custom_object, group, version, plural):
+        logger.debug(event)
         if event['type'] == 'ADDED':
+            namespace = event['metadata']['namespace']
             hparams = event['raw_object']['spec']['hyperparams']
             if event['raw_object']['spec']['algorithm'] == 'grid':
                 experiments = grid_search(hparams)
@@ -81,8 +90,9 @@ def main():
                     resp = custom_api.create_namespaced_custom_object(group, version, namespace, "workflows", wf, pretty=True)
                 except client.rest.ApiException:
                     continue
-                print(yaml.dump(wf))
+                logger.info(yaml.dump(wf))
         if event['type'] == 'DELETED':
+            namespace = event['metadata']['namespace']
             # TODO: This would be better managed with resource owners
             name = event['raw_object']['metadata']['name']
             custom_api.delete_namespaced_custom_object(group, version, namespace, "workflows", name=name, body=client.V1DeleteOptions())
