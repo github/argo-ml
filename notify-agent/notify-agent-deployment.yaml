@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argo-notify-agent
+  namespace: argo
+  labels:
+    app: argo-notify-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: argo-notify-agent
+  template:
+    metadata:
+      labels:
+        app: argo-notify-agent
+    spec:
+      containers:
+      - name: argo-notify
+        image: registry.com/notify-agent:latest
+        env:
+          - name: CHAT_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: agent-secret
+                key: chat_token
+          - name: WEBHOOK_URL
+            valueFrom:
+              secretKeyRef:
+                name: agent-secret
+                key: webhook_url
+          - name: DEFAULT_CHANNEL
+            value: "channel-ops" # add a default channel to post to
+          - name: ARGO_UI_URL
+            value: "<http://kube.your_domain.com>" # edit with your argo ui domain
+          - name: WEBHOOKS_ENABLED
+            value: True
+        command: ["python", "notify-agent/agent.py"]
