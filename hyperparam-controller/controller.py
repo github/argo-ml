@@ -64,6 +64,7 @@ def generate_workflow(wf, experiments):
     pprint(wf['metadata'])
     return wf
 
+
 def main():
     group = "argoproj.io"
     version = "v1alpha1"
